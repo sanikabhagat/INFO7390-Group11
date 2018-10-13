@@ -1,0 +1,212 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Oct  9 23:50:03 2018
+
+@author: srikantswamy
+"""
+
+import sys
+from urllib.request import urlopen
+from bs4 import BeautifulSoup
+import csv
+import re
+import logging
+import os
+import inspect
+import zipfile
+import time
+import datetime
+from pytz import timezone
+
+
+companyId=sys.argv[1]
+accessionId=sys.argv[2]
+
+
+
+companyId=companyId.lstrip("0")
+companyId=str(companyId)
+accessionId=str(accessionId)
+
+
+def function_logger(file_level, console_level = None):
+    function_name = inspect.stack()[1][3]
+    logger = logging.getLogger(function_name)
+    logger.setLevel(logging.DEBUG) #By default, logs all messages
+    
+    if console_level != None:
+        ch = logging.StreamHandler() #StreamHandler logs to console
+        ch.setLevel(console_level)
+        ch_format = logging.Formatter('%(asctime)s - %(message)s')
+        ch.setFormatter(ch_format)
+        logger.addHandler(ch)
+    ts = time.time()
+    st = datetime.datetime.now(timezone('UTC')).astimezone(timezone('US/Eastern')).fromtimestamp(ts).strftime('%Y%m%d_%H%M%S_%Z%z')
+    
+    fh = logging.FileHandler("{}.log".format('Edgar_'+companyId+'_'+accessionId))
+    fh.setLevel(file_level)
+    fh_format = logging.Formatter('%(asctime)s - %(lineno)d - %(levelname)-8s - %(message)s')
+    fh.setFormatter(fh_format)
+    logger.addHandler(fh)
+
+    return logger
+
+f1_logger = function_logger(logging.DEBUG, logging.ERROR)
+
+# To create zip files
+def zipfolder(foldername, target_dir):            
+    zipobj = zipfile.ZipFile(foldername + '.zip', 'w', zipfile.ZIP_DEFLATED)
+    rootlen = len(target_dir) + 1
+    for base, dirs, files in os.walk(target_dir):
+        for file in files:
+            fn = os.path.join(base, file)
+            zipobj.write(fn, fn[rootlen:])
+
+
+#LOG_FILENAME = 'Edgar_'+companyId+'_'+accessionId+'.log' 
+#logging.basicConfig(filename=LOG_FILENAME, filemode='w', level=logging.DEBUG)
+
+
+f1_logger.debug("*********** Web Scraping Program Started ***********")
+f1_logger.debug("****************************************************")
+
+
+#https://www.sec.gov/Archives/edgar/data/
+#51143/000005114313000007/0000051143-13-000007-index.htm
+domainUrl="https://www.sec.gov"
+headerUrl="https://www.sec.gov/Archives/edgar/data/"
+accessionId2=accessionId.replace('-','')
+tailUrl="-index.htm"
+archiveUrl=headerUrl+companyId+"/"+accessionId2+"/"+accessionId+tailUrl
+
+f1_logger.debug('URL genearted for input: {}'.format(archiveUrl))
+
+#Opening the archive URL
+def url_check(url):
+    try:
+        page_open = urlopen(url)
+        if page_open.code == 200:
+            f1_logger.debug('URL is valid: {} '.format(url))
+            return 0
+    except:
+        f1_logger.debug('Invalid URL {}: Please provide valid URL'.format(url))
+        
+        return 1
+    
+
+url_flag=url_check(archiveUrl)
+
+
+
+if url_flag == 0:
+    htmlarch = urlopen(archiveUrl)
+
+
+
+
+
+    soup = BeautifulSoup(htmlarch, 'lxml')
+
+#Title of the webpage
+    title=soup.title
+
+    rows=soup.find(string='10-Q')
+    a_tag=rows.parent
+    next_td_tag = a_tag.findNext('td')
+    finalUrl=next_td_tag.find("a").get("href")
+    
+    
+    finalUrl=domainUrl+finalUrl
+
+    f1_logger.debug('URL genearted for 10Q page: {}'.format(finalUrl))
+    
+    url_flag=url_check(finalUrl)
+
+
+    if url_flag == 0:
+        htmlarch = urlopen(finalUrl)
+        
+        html10q=urlopen(finalUrl)
+
+        soup10q=BeautifulSoup(html10q,'html.parser')
+
+# Processing Rows
+
+        def conv(table):
+    
+            conv = []
+            printtrs = table.find_all('tr')
+            for tr in printtrs:
+                data=[]
+                pdata=[]
+            
+            
+                printtds=tr.find_all('td')
+            
+                for a in printtds:
+                    x=a.text;
+                    x=re.sub(r"['()]","",str(x))
+                    x=re.sub(r"[$]"," ",str(x))
+                    if(len(x)>1):
+                        x=re.sub(r"[—]","",str(x))
+                    str_x = str(x)
+                    clean = re.compile('<.*?>')
+                    clean2 = (re.sub(clean, '',str_x))
+                    pdata.append(clean2)
+                data=([a.encode('utf-8') for a in pdata])
+                conv.append([a.decode('utf-8').strip() for a in data])
+            return conv
+
+        
+
+        all_tables = soup10q.find_all('table')
+
+        i=0
+
+# Finding Tables
+        
+        cwd=os.getcwd()
+        f1_logger.debug('Current working directory is: {}'.format(cwd))
+        file_dir=cwd + '/edgar_files/'
+        access_rights = 0o755
+        try:  
+            os.mkdir(file_dir,access_rights)
+        except OSError:  
+            f1_logger.debug ("Creation of the directory %s failed" % file_dir)
+        else:  
+            f1_logger.debug ("Directory created: %s " % file_dir)
+                
+        f1_logger.debug('Directory created: {}'.format(file_dir))
+        f1_logger.debug('Creating files in: {}'.format(file_dir))       
+                
+        
+
+        for table in all_tables:
+   
+    
+            trs = table.find_all('tr')
+            for tr in trs:
+                tab=tr.find_parent('table')
+        
+                maintab = conv(tab)
+        
+        
+                file_nm="Edgar" + str(i) + '.csv'
+                
+                path=file_dir+file_nm
+        
+                with open(path, 'w', encoding='utf-8-sig', newline='') as f:
+                    writer = csv.writer(f)
+                    writer.writerows(maintab)   
+
+            i=i+1
+            
+        i=str(i)
+        f1_logger.debug('Created files: {}'.format(i))
+        
+        zipfolder('edgar_files', file_dir)
+        f1_logger.debug("*** Zip folder created ***")        
+        f1_logger.debug("*********** Web Scraping Program Ended ***********")
+        f1_logger.debug("****************************************************")
+        

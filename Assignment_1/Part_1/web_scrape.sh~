@@ -1,0 +1,8 @@
+#!/bin/bash
+
+python3 /src/assign_1/web_scrape.py $companyId  $accessionId
+
+mv /src/*zip /src/assign_1/out/
+mv /src/Edgar*.log /src/assign_1/out/
+
+echo "Files moved"
