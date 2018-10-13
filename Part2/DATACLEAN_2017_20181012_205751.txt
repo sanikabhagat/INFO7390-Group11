@@ -1,0 +1,19 @@
+2018-10-12 20:57:56,468 - DEBUG - Clearing the index array :
+2018-10-12 20:57:56,469 - DEBUG - []
+2018-10-12 20:57:56,499 - DEBUG - Starting new HTTPS connection (1): www.sec.gov
+2018-10-12 20:57:56,642 - DEBUG - https://www.sec.gov:443 "GET /dera/data/edgar-log-file-data-set.html HTTP/1.1" 200 11977
+2018-10-12 20:57:57,256 - INFO - ######################
+2018-10-12 20:57:57,257 - INFO - Generating the URL for every year
+2018-10-12 20:57:57,258 - INFO - ######################
+2018-10-12 20:57:57,268 - INFO - ######################
+2018-10-12 20:57:57,269 - INFO - The year is 2017
+2018-10-12 20:57:57,271 - INFO - ######################
+2018-10-12 20:57:57,272 - INFO - ######################
+2018-10-12 20:57:57,274 - INFO - Creating the Folder to store cleaned data
+2018-10-12 20:57:57,276 - INFO - ######################
+2018-10-12 20:57:57,277 - INFO - ######################
+2018-10-12 20:57:57,278 - INFO - Creating file for Summary
+2018-10-12 20:57:57,279 - INFO - ######################
+2018-10-12 20:57:57,294 - INFO - ######################
+2018-10-12 20:57:57,296 - INFO - Downloading the CSV and creating Data Frames for the year entered by the year
+2018-10-12 20:57:57,298 - INFO - ######################

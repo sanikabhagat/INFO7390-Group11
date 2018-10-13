@@ -1,0 +1,4 @@
+2018-10-12 20:56:12,230 - DEBUG - Clearing the index array :
+2018-10-12 20:56:12,231 - DEBUG - []
+2018-10-12 20:56:12,257 - DEBUG - Starting new HTTPS connection (1): www.sec.gov
+2018-10-12 20:56:12,453 - DEBUG - https://www.sec.gov:443 "GET /dera/data/edgar-log-file-data-set.html HTTP/1.1" 200 11977
